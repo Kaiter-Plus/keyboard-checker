@@ -12,3 +12,8 @@ zig build
 ```bash
 zig build run
 ```
+
+## 构建发行版本
+```bash
+zig build -Doptimize=ReleaseFast
+```
