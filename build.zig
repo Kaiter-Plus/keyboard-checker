@@ -26,6 +26,8 @@ pub fn build(b: *std.Build) void {
         exe.subsystem = .Windows;
     }
 
+    // TODO: 构建时，复制资源（字体）到构建目录下
+
     exe.linkLibrary(raylib_artifact);
     exe.root_module.addImport("raylib", raylib);
     exe.root_module.addImport("raygui", raygui);
