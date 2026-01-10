@@ -3,7 +3,7 @@
 使用 zig 和 raylib 实现的一个简单的键盘按键检测软件。
 
 
-## 构建过程
+## 构建
 ```bash
 zig build
 ```
@@ -17,3 +17,7 @@ zig build run
 ```bash
 zig build -Doptimize=ReleaseFast
 ```
+
+## 软件运行界面
+![软件运行界面1](./screenshots/1.png)
+![软件运行界面2](./screenshots/2.png)
