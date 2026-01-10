@@ -43,6 +43,11 @@ const Key = struct {
     text: [:0]const u8,
     key_code: rl.KeyboardKey,
     is_pressed: bool = false,
+
+    pub fn reset(self: *Key) void {
+        self.counter = 0;
+        self.is_pressed = false;
+    }
 };
 
 // 键盘布局
@@ -168,22 +173,24 @@ var font: rl.Font = undefined;
 // 字符集
 const FONT_CHARS: []const i32 = &.{
     // 小写字母
-    'a',   'b',   'c',   'd',   'e',   'f',   'g', 'h', 'i',  'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',   'r',   's',   't',   'u',   'v',   'w',   'x',   'y',   'z',
+    'a',   'b',   'c',   'd',   'e',   'f',   'g',   'h',   'i',  'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',   'r',   's',   't',   'u',   'v',   'w',   'x',   'y',   'z',
 
     // 大写字母
-    'A',   'B',   'C',   'D',   'E',   'F',   'G', 'H', 'I',  'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',   'R',   'S',   'T',   'U',   'V',   'W',   'X',   'Y',   'Z',
+    'A',   'B',   'C',   'D',   'E',   'F',   'G',   'H',   'I',  'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',   'R',   'S',   'T',   'U',   'V',   'W',   'X',   'Y',   'Z',
 
     // 数字和符号
-    '0',   '1',   '2',   '3',   '4',   '5',   '6', '7', '8',  '9',
+    '0',   '1',   '2',   '3',   '4',   '5',   '6',   '7',   '8',  '9',
 
     // 符号
     '~', '`', '!', '@', '#', '$', '%',   '^',   '&',   '*',   '(',   ')',   '-',   '_',   '=',   '+',
-    '[',   '{',   ']',   '}',   '\\',  '|',   ';', ':', '\'', '"', ',', '<', '.', '>', '/', '?', '↑', '↓', '→', '←',
+    '[',   '{',   ']',   '}',   '\\',  '|',   ';',   ':',   '\'', '"', ',', '<', '.', '>', '/', '?', '↑', '↓', '→', '←',
 
     // 中文
     '颜', '色', '对', '照', '表', '按',
-    '住', '默', '认', '次', '大', '于',
+    '住', '默', '认', '次', '大', '于', '重', '置',
 };
+
+const RESET_BUTTON_TEXT = "重置";
 
 pub fn main() anyerror!void {
     // 配置
@@ -220,6 +227,19 @@ pub fn main() anyerror!void {
         .zoom = 1.0,
     };
 
+    // 重置按钮
+    const reset_button: rl.Rectangle = .{
+        .x = @as(f32, @floatFromInt(VIRTUAL_WIDTH - 100)) / 2.0,
+        .y = @as(f32, @floatFromInt(VIRTUAL_HEIGHT - 20)) - 200.0,
+        .width = 100,
+        .height = 50,
+    };
+
+    // 计算重置按钮文字大小
+    const reset_button_text_rect = rl.measureTextEx(font, RESET_BUTTON_TEXT, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
+    const reset_button_text_x = reset_button.x + (reset_button.width - reset_button_text_rect.x) / 2;
+    const reset_button_text_y = reset_button.y + (reset_button.height - reset_button_text_rect.y) / 2;
+
     // 主循环
     while (!rl.windowShouldClose()) {
         // 获取当前窗口大小
@@ -235,6 +255,20 @@ pub fn main() anyerror!void {
         const offset_y = (screen_height - VIRTUAL_HEIGHT * scale) / 2;
         camera.offset = .{ .x = offset_x, .y = offset_y };
 
+        // 获取当前的鼠标位置
+        const mouse_pos = rl.getMousePosition();
+
+        // 判断是不是点击了重置按钮
+        if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
+            const virtual_mouse_pos: rl.Vector2 = .{
+                .x = (mouse_pos.x - offset_x) / scale,
+                .y = (mouse_pos.y - offset_y) / scale,
+            };
+            if (rl.checkCollisionPointRec(virtual_mouse_pos, reset_button)) {
+                reset_keys();
+            }
+        }
+
         // 开始绘制
         rl.beginDrawing();
         defer rl.endDrawing();
@@ -244,6 +278,10 @@ pub fn main() anyerror!void {
 
         // 背景颜色
         rl.clearBackground(.white);
+
+        // 绘制重置按钮
+        rl.drawRectangleRounded(reset_button, 0.1, 50, .blue);
+        rl.drawTextEx(font, "重置", .{ .x = reset_button_text_x, .y = reset_button_text_y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
 
         // 直接在屏幕空间绘制键盘
         try drawKeyboard();
@@ -353,4 +391,10 @@ fn drawKey(key: *Key, keyboard_x: f32, keyboard_y: f32) void {
 
     // 绘制文本
     rl.drawTextEx(font, key.text, .{ .x = aligned_text_pos_x, .y = aligned_text_pos_y }, text_size, KEY_TEXT_SPACING, .white);
+}
+
+fn reset_keys() void {
+    for (&KEYBOARD_LAYOUT) |*key| {
+        key.reset();
+    }
 }
