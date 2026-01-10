@@ -26,13 +26,20 @@ pub fn build(b: *std.Build) void {
         exe.subsystem = .Windows;
     }
 
-    // TODO: 构建时，复制资源（字体）到构建目录下
-
     exe.linkLibrary(raylib_artifact);
     exe.root_module.addImport("raylib", raylib);
     exe.root_module.addImport("raygui", raygui);
 
     b.installArtifact(exe);
+
+    // 复制资源文件夹
+    const assets_dir = b.addInstallDirectory(.{
+        .source_dir = b.path("assets"),
+        .install_dir = .bin,
+        .install_subdir = "assets",
+    });
+
+    b.getInstallStep().dependOn(&assets_dir.step);
 
     const run_step = b.step("run", "Run the app");
 

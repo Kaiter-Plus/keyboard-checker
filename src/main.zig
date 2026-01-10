@@ -206,7 +206,7 @@ pub fn main() anyerror!void {
     rl.setTargetFPS(60);
 
     // 自定义字体
-    font = try rl.loadFontEx("assets/fonts/HarmonyOS_SansSC_Regular.ttf", 256, FONT_CHARS);
+    font = try rl.loadFontEx("./assets/fonts/HarmonyOS_SansSC_Regular.ttf", 256, FONT_CHARS);
     defer rl.unloadFont(font);
 
     // 设置字体纹理过滤模式为点采样
