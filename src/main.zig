@@ -1,35 +1,28 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-// 默认(初始化)窗口大小
+// ============ 窗口与布局常量 ============
 const INITIAL_WIDTH = 1600;
 const INITIAL_HEIGHT = 900;
 
-// 逻辑窗口大小
-const VIRTUAL_WIDTH = 1920;
-const VIRTUAL_HEIGHT = 1080;
+const VIRTUAL_WIDTH: f32 = 1920;
+const VIRTUAL_HEIGHT: f32 = 1080;
 
-// 原始键盘大小
-const KEYBOARD_WIDTH = 1630;
-const KEYBOARD_HEIGHT = 470;
+const KEYBOARD_WIDTH: f32 = 1630;
+const KEYBOARD_HEIGHT: f32 = 470;
+const KEYBOARD_OFFSET_Y: f32 = 170; // 键盘顶部距虚拟窗口顶部的距离
 
-// 提示文本大小
-const TIP_TEXT_SIZE = 24;
+const TIP_TEXT_SIZE: f32 = 24;
+const KEY_TEXT_SIZE: f32 = 18;
+const KEY_TEXT_SPACING: f32 = 1.5;
 
-// 按键文字大小
-const KEY_TEXT_SIZE = 18;
-// 字母间距
-const KEY_TEXT_SPACING = 1.5;
-
-// 配色常量
-const BG_COLOR = rl.Color{ .r = 0x1E, .g = 0x20, .b = 0x26, .a = 0xFF }; // 窗口背景：深灰
-const KEYBOARD_BG_COLOR = rl.Color{ .r = 0x2A, .g = 0x2D, .b = 0x35, .a = 0xFF }; // 键盘容器背景
-const RESET_BTN_COLOR = rl.Color{ .r = 0x60, .g = 0xA5, .b = 0xFA, .a = 0xFF }; // 重置按钮：亮蓝（同按下色）
-
-// 按键按下颜色（亮蓝）
+// ============ 配色 ============
+const BG_COLOR = rl.Color{ .r = 0x1E, .g = 0x20, .b = 0x26, .a = 0xFF };
+const KEYBOARD_BG_COLOR = rl.Color{ .r = 0x2A, .g = 0x2D, .b = 0x35, .a = 0xFF };
+const RESET_BTN_COLOR = rl.Color{ .r = 0x60, .g = 0xA5, .b = 0xFA, .a = 0xFF };
 const KEY_PRESSED_COLOR = rl.Color{ .r = 0x60, .g = 0xA5, .b = 0xFA, .a = 0xFF };
+const KEY_TEXT_LIGHT = rl.Color{ .r = 0xD1, .g = 0xD5, .b = 0xDB, .a = 0xFF };
 
-// 按键颜色（深色主题）
 const KEY_COUNTER_COLORS = [_]rl.Color{
     .{ .r = 0x3C, .g = 0x40, .b = 0x48, .a = 0xFF }, // 默认：炭灰
     .{ .r = 0x81, .g = 0x8C, .b = 0xF8, .a = 0xFF }, // 1次：紫罗兰
@@ -38,7 +31,9 @@ const KEY_COUNTER_COLORS = [_]rl.Color{
     .{ .r = 0xEF, .g = 0x44, .b = 0x44, .a = 0xFF }, // 4次+：红色
 };
 
-// 按键结构体
+const MAX_COUNTER: u32 = KEY_COUNTER_COLORS.len - 1;
+
+// ============ 按键结构 ============
 const Key = struct {
     x: f32,
     y: f32,
@@ -49,15 +44,14 @@ const Key = struct {
     key_code: rl.KeyboardKey,
     is_pressed: bool = false,
 
-    pub fn reset(self: *Key) void {
+    fn reset(self: *Key) void {
         self.counter = 0;
         self.is_pressed = false;
     }
 };
 
-// 键盘布局
+// ============ 键盘布局 ============
 var KEYBOARD_LAYOUT = [_]Key{
-    // 第一行
     .{ .x = 30, .y = 30, .text = "Esc", .key_code = .escape },
     .{ .x = 170, .y = 30, .text = "F1", .key_code = .f1 },
     .{ .x = 239.7, .y = 30, .text = "F2", .key_code = .f2 },
@@ -74,8 +68,7 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 1100, .y = 30, .text = "PrtScn", .key_code = .print_screen },
     .{ .x = 1170, .y = 30, .text = "ScrLK", .key_code = .scroll_lock },
     .{ .x = 1240, .y = 30, .text = "Pause", .key_code = .pause },
-
-    // 第二行
+    // ── 第二行 ──
     .{ .x = 30, .y = 100, .text = "~\n`", .key_code = .grave },
     .{ .x = 100, .y = 100, .text = "!\n1", .key_code = .one },
     .{ .x = 170, .y = 100, .text = "@\n2", .key_code = .two },
@@ -94,12 +87,11 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 1170, .y = 100, .text = "Home", .key_code = .home },
     .{ .x = 1240, .y = 100, .text = "PgUp", .key_code = .page_up },
     .{ .x = 1330, .y = 100, .text = "Num\nLock", .key_code = .num_lock },
-    .{ .x = 1400, .y = 100, .text = "/", .key_code = .kp_divide }, // 小键盘 /
-    .{ .x = 1470, .y = 100, .text = "*", .key_code = .kp_multiply }, // 小键盘 *
-    .{ .x = 1540, .y = 100, .text = "-", .key_code = .kp_subtract }, // 小键盘 -
-
-    // 第三行
-    .{ .x = 30, .y = 170, .width = 95, .text = "Tab    ", .key_code = .tab },
+    .{ .x = 1400, .y = 100, .text = "/", .key_code = .kp_divide },
+    .{ .x = 1470, .y = 100, .text = "*", .key_code = .kp_multiply },
+    .{ .x = 1540, .y = 100, .text = "-", .key_code = .kp_subtract },
+    // ── 第三行 ──
+    .{ .x = 30, .y = 170, .width = 95, .text = "Tab", .key_code = .tab },
     .{ .x = 135, .y = 170, .text = "Q", .key_code = .q },
     .{ .x = 205, .y = 170, .text = "W", .key_code = .w },
     .{ .x = 275, .y = 170, .text = "E", .key_code = .e },
@@ -116,13 +108,12 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 1100, .y = 170, .text = "Delete", .key_code = .delete },
     .{ .x = 1170, .y = 170, .text = "End", .key_code = .end },
     .{ .x = 1240, .y = 170, .text = "PgDn", .key_code = .page_down },
-    .{ .x = 1330, .y = 170, .text = "7", .key_code = .kp_7 }, // 小键盘 7
+    .{ .x = 1330, .y = 170, .text = "7", .key_code = .kp_7 },
     .{ .x = 1400, .y = 170, .text = "8", .key_code = .kp_8 },
     .{ .x = 1470, .y = 170, .text = "9", .key_code = .kp_9 },
-    .{ .x = 1540, .y = 170, .height = 130, .text = "+", .key_code = .kp_add }, // 小键盘 +
-
-    // 第四行
-    .{ .x = 30, .y = 240, .width = 125, .text = "CapsLock ", .key_code = .caps_lock },
+    .{ .x = 1540, .y = 170, .height = 130, .text = "+", .key_code = .kp_add },
+    // ── 第四行 ──
+    .{ .x = 30, .y = 240, .width = 125, .text = "CapsLock", .key_code = .caps_lock },
     .{ .x = 165, .y = 240, .text = "A", .key_code = .a },
     .{ .x = 235, .y = 240, .text = "S", .key_code = .s },
     .{ .x = 305, .y = 240, .text = "D", .key_code = .d },
@@ -134,13 +125,12 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 725, .y = 240, .text = "L", .key_code = .l },
     .{ .x = 795, .y = 240, .text = ";\n:", .key_code = .semicolon },
     .{ .x = 865, .y = 240, .text = "'\n\"", .key_code = .apostrophe },
-    .{ .x = 935, .y = 240, .width = 135, .text = "    Enter", .key_code = .enter }, // 主键盘 Enter
-    .{ .x = 1330, .y = 240, .text = "4", .key_code = .kp_4 }, // 小键盘 4
+    .{ .x = 935, .y = 240, .width = 135, .text = "Enter", .key_code = .enter },
+    .{ .x = 1330, .y = 240, .text = "4", .key_code = .kp_4 },
     .{ .x = 1400, .y = 240, .text = "5", .key_code = .kp_5 },
     .{ .x = 1470, .y = 240, .text = "6", .key_code = .kp_6 },
-
-    // 第五行
-    .{ .x = 30, .y = 310, .width = 150, .text = "Shift         ", .key_code = .left_shift },
+    // ── 第五行 ──
+    .{ .x = 30, .y = 310, .width = 150, .text = "Shift", .key_code = .left_shift },
     .{ .x = 190, .y = 310, .text = "Z", .key_code = .z },
     .{ .x = 260, .y = 310, .text = "X", .key_code = .x },
     .{ .x = 330, .y = 310, .text = "C", .key_code = .c },
@@ -149,19 +139,18 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 540, .y = 310, .text = "N", .key_code = .n },
     .{ .x = 610, .y = 310, .text = "M", .key_code = .m },
     .{ .x = 680, .y = 310, .text = "<\n,", .key_code = .comma },
-    .{ .x = 750, .y = 310, .text = ".\n>", .key_code = .period },
+    .{ .x = 750, .y = 310, .text = ">\n.", .key_code = .period },
     .{ .x = 820, .y = 310, .text = "?\n/", .key_code = .slash },
-    .{ .x = 890, .y = 310, .width = 180, .text = "           Shift", .key_code = .right_shift },
+    .{ .x = 890, .y = 310, .width = 180, .text = "Shift", .key_code = .right_shift },
     .{ .x = 1170, .y = 310, .text = "↑", .key_code = .up },
-    .{ .x = 1330, .y = 310, .text = "1", .key_code = .kp_1 }, // 小键盘 1
+    .{ .x = 1330, .y = 310, .text = "1", .key_code = .kp_1 },
     .{ .x = 1400, .y = 310, .text = "2", .key_code = .kp_2 },
     .{ .x = 1470, .y = 310, .text = "3", .key_code = .kp_3 },
-    .{ .x = 1540, .y = 310, .height = 130, .text = "Enter", .key_code = .kp_enter }, // 小键盘 Enter
-
-    // 第六行
+    .{ .x = 1540, .y = 310, .height = 130, .text = "Enter", .key_code = .kp_enter },
+    // ── 第六行 ──
     .{ .x = 30, .y = 380, .text = "Ctrl", .key_code = .left_control },
-    .{ .x = 100, .y = 380, .text = "Win", .key_code = .null }, // Fn 键通常不被操作系统上报，用 null
-    .{ .x = 170, .y = 380, .text = "Alt", .key_code = .left_super },
+    .{ .x = 100, .y = 380, .text = "Win", .key_code = .left_super },
+    .{ .x = 170, .y = 380, .text = "Alt", .key_code = .left_alt },
     .{ .x = 240, .y = 380, .width = 620, .text = "Space", .key_code = .space },
     .{ .x = 870, .y = 380, .text = "Alt", .key_code = .right_alt },
     .{ .x = 940, .y = 380, .text = "Win", .key_code = .right_super },
@@ -169,241 +158,162 @@ var KEYBOARD_LAYOUT = [_]Key{
     .{ .x = 1100, .y = 380, .text = "←", .key_code = .left },
     .{ .x = 1170, .y = 380, .text = "↓", .key_code = .down },
     .{ .x = 1240, .y = 380, .text = "→", .key_code = .right },
-    .{ .x = 1330, .y = 380, .width = 130, .text = "0\nIns", .key_code = .kp_0 }, // 小键盘 0
-    .{ .x = 1470, .y = 380, .text = ".\nDel", .key_code = .kp_decimal }, // 小键盘 .
+    .{ .x = 1330, .y = 380, .width = 130, .text = "0\nIns", .key_code = .kp_0 },
+    .{ .x = 1470, .y = 380, .text = ".\nDel", .key_code = .kp_decimal },
 };
 
-// 自定义字体
+// ============ 字体 ============
 var font: rl.Font = undefined;
-// 字符集
+
 const FONT_CHARS: []const i32 = &.{
-    // 小写字母
-    'a',   'b',   'c',   'd',   'e',   'f',   'g',   'h',   'i',  'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',   'r',   's',   't',   'u',   'v',   'w',   'x',   'y',   'z',
-
-    // 大写字母
-    'A',   'B',   'C',   'D',   'E',   'F',   'G',   'H',   'I',  'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',   'R',   'S',   'T',   'U',   'V',   'W',   'X',   'Y',   'Z',
-
-    // 数字
-    '0',   '1',   '2',   '3',   '4',   '5',   '6',   '7',   '8',  '9',
-
-    // 符号
-    '~', '`', '!', '@', '#', '$', '%',   '^',   '&',   '*',   '(',   ')',   '-',   '_',   '=',   '+',
-    '[',   '{',   ']',   '}',   '\\',  '|',   ';',   ':',   '\'', '"', ',', '<', '.', '>', '/', '?', '↑', '↓', '→', '←',
-
-    // 中文
-    '颜', '色', '对', '照', '表', '按',
+    'a',   'b',   'c',   'd',   'e',   'f',   'g',   'h',   'i',   'j',   'k',   'l',   'm',
+    'n',   'o',   'p',   'q',   'r',   's',   't',   'u',   'v',   'w',   'x',   'y',   'z',
+    'A',   'B',   'C',   'D',   'E',   'F',   'G',   'H',   'I',   'J',   'K',   'L',   'M',
+    'N',   'O',   'P',   'Q',   'R',   'S',   'T',   'U',   'V',   'W',   'X',   'Y',   'Z',
+    '0',   '1',   '2',   '3',   '4',   '5',   '6',   '7',   '8',   '9',   '~',   '`',   '!',
+    '@',   '#',   '$',   '%',   '^',   '&',   '*',   '(',   ')',   '-',   '_',   '=',   '+',
+    '[',   '{',   ']',   '}',   '\\',  '|',   ';',   ':',   '\'',  '"',   ',',   '<',   '.',
+    '>',   '/',   '?',   '↑', '↓', '→', '←', '颜', '色', '对', '照', '表', '按',
     '住', '默', '认', '次', '大', '于', '重', '置',
 };
 
-const RESET_BUTTON_TEXT = "重置";
+const RESET_BTN_TEXT = "重置";
 
+// ============ 主函数 ============
 pub fn main() anyerror!void {
-    // 配置
-    rl.setConfigFlags(.{
-        .window_resizable = true,
-        .window_highdpi = true,
-    });
-
-    // 设置输出日志级别
+    rl.setConfigFlags(.{ .window_resizable = true, .window_highdpi = true });
     rl.setTraceLogLevel(.warning);
 
-    // 初始化窗口
     rl.initWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "键盘检测器");
     defer rl.closeWindow();
 
-    // 设置退出键为空
-    rl.setExitKey(rl.KeyboardKey.null);
-
-    // 设置目标帧率
+    rl.setExitKey(.null);
     rl.setTargetFPS(60);
 
-    // 自定义字体 - 大基尺寸减少缩放损失
-    font = try rl.loadFontEx("./assets/fonts/HarmonyOS_SansSC_Regular.ttf", 2048, FONT_CHARS);
+    font = try rl.loadFontEx("./assets/fonts/HarmonyOS_SansSC_Regular.ttf", 256, FONT_CHARS);
     defer rl.unloadFont(font);
-
-    // 字体纹理过滤：双线性
     rl.setTextureFilter(font.texture, .bilinear);
 
-    // 创建相机
-    var camera: rl.Camera2D = .{
-        .target = .{ .x = 0, .y = 0 },
-        .offset = .{ .x = 0, .y = 0 },
-        .rotation = 0.0,
-        .zoom = 1.0,
-    };
+    var camera: rl.Camera2D = .{ .target = .{ .x = 0, .y = 0 }, .offset = .{ .x = 0, .y = 0 }, .rotation = 0, .zoom = 1 };
 
     // 重置按钮
-    const reset_button: rl.Rectangle = .{
-        .x = @as(f32, @floatFromInt(VIRTUAL_WIDTH - 100)) / 2.0,
-        .y = @as(f32, @floatFromInt(VIRTUAL_HEIGHT - 20)) - 200.0,
+    const reset_btn = rl.Rectangle{
+        .x = (VIRTUAL_WIDTH - 100) / 2,
+        .y = VIRTUAL_HEIGHT - 220,
         .width = 100,
         .height = 50,
     };
 
-    // 计算重置按钮文字大小
-    const reset_button_text_rect = rl.measureTextEx(font, RESET_BUTTON_TEXT, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
-    const reset_button_text_x = reset_button.x + (reset_button.width - reset_button_text_rect.x) / 2;
-    const reset_button_text_y = reset_button.y + (reset_button.height - reset_button_text_rect.y) / 2;
-
     // 主循环
     while (!rl.windowShouldClose()) {
-        // 获取当前窗口大小
-        const screen_width = @as(f32, @floatFromInt(rl.getScreenWidth()));
-        const screen_height = @as(f32, @floatFromInt(rl.getScreenHeight()));
-        // 计算缩放比
-        const scale_width = screen_width / @as(f32, @floatFromInt(VIRTUAL_WIDTH));
-        const scale_height = screen_height / @as(f32, @floatFromInt(VIRTUAL_HEIGHT));
-        const scale = @min(scale_width, scale_height);
+        const screen_w = @as(f32, @floatFromInt(rl.getScreenWidth()));
+        const screen_h = @as(f32, @floatFromInt(rl.getScreenHeight()));
+
+        const scale = @min(screen_w / VIRTUAL_WIDTH, screen_h / VIRTUAL_HEIGHT);
         camera.zoom = scale;
-        // 计算偏移量
-        const offset_x = (screen_width - VIRTUAL_WIDTH * scale) / 2;
-        const offset_y = (screen_height - VIRTUAL_HEIGHT * scale) / 2;
-        camera.offset = .{ .x = offset_x, .y = offset_y };
+        camera.offset = .{
+            .x = (screen_w - VIRTUAL_WIDTH * scale) / 2,
+            .y = (screen_h - VIRTUAL_HEIGHT * scale) / 2,
+        };
 
-        // 获取当前的鼠标位置
-        const mouse_pos = rl.getMousePosition();
-
-        // 判断是不是点击了重置按钮
-        if (rl.isMouseButtonPressed(rl.MouseButton.left)) {
-            const virtual_mouse_pos: rl.Vector2 = .{
-                .x = (mouse_pos.x - offset_x) / scale,
-                .y = (mouse_pos.y - offset_y) / scale,
-            };
-            if (rl.checkCollisionPointRec(virtual_mouse_pos, reset_button)) {
-                reset_keys();
+        // 鼠标点击检测
+        if (rl.isMouseButtonPressed(.left)) {
+            const mp = rl.getMousePosition();
+            const vp = rl.Vector2{ .x = (mp.x - camera.offset.x) / scale, .y = (mp.y - camera.offset.y) / scale };
+            if (rl.checkCollisionPointRec(vp, reset_btn)) {
+                for (&KEYBOARD_LAYOUT) |*k| k.reset();
             }
         }
 
-        // 开始绘制
         rl.beginDrawing();
         defer rl.endDrawing();
-
         rl.beginMode2D(camera);
         defer rl.endMode2D();
 
-        // 背景颜色
         rl.clearBackground(BG_COLOR);
 
-        // 绘制重置按钮
-        rl.drawRectangleRounded(reset_button, 0.1, 50, RESET_BTN_COLOR);
-        rl.drawTextEx(font, "重置", .{ .x = reset_button_text_x, .y = reset_button_text_y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
+        // 重置按钮
+        rl.drawRectangleRounded(reset_btn, 0.1, 50, RESET_BTN_COLOR);
+        const btn_text_rect = rl.measureTextEx(font, RESET_BTN_TEXT, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
+        rl.drawTextEx(
+            font,
+            RESET_BTN_TEXT,
+            .{ .x = reset_btn.x + (reset_btn.width - btn_text_rect.x) / 2, .y = reset_btn.y + (reset_btn.height - btn_text_rect.y) / 2 },
+            TIP_TEXT_SIZE,
+            KEY_TEXT_SPACING,
+            .white,
+        );
 
-        // 直接在屏幕空间绘制键盘
-        try drawKeyboard();
+        // 绘制键盘
+        drawKeyboard();
     }
 }
 
-// 在屏幕空间绘制键盘（避免相机缩放导致的字体模糊）
-fn drawKeyboard() !void {
-    // 计算键盘位置（居中）
-    const keyboard_x = @as(f32, @floatFromInt(VIRTUAL_WIDTH - KEYBOARD_WIDTH)) / 2.0;
-    const keyboard_y = @as(f32, @floatFromInt(VIRTUAL_HEIGHT - KEYBOARD_HEIGHT)) / 2.0;
+// ============ 绘制函数 ============
+fn drawKeyboard() void {
+    const kx = (VIRTUAL_WIDTH - KEYBOARD_WIDTH) / 2;
+    const ky = (VIRTUAL_HEIGHT - KEYBOARD_HEIGHT) / 2;
 
-    // 绘制键盘主容器
-    const keyboard_color = KEYBOARD_BG_COLOR;
-    const keyboard_width = @as(f32, @floatFromInt(KEYBOARD_WIDTH));
-    const keyboard_height = @as(f32, @floatFromInt(KEYBOARD_HEIGHT));
-    rl.drawRectangleRounded(.{ .x = keyboard_x, .y = keyboard_y, .width = keyboard_width, .height = keyboard_height }, 0.1, 4, keyboard_color);
+    rl.drawRectangleRounded(.{ .x = kx, .y = ky, .width = KEYBOARD_WIDTH, .height = KEYBOARD_HEIGHT }, 0.1, 4, KEYBOARD_BG_COLOR);
 
-    // 绘制提示文本
-    var x = keyboard_x;
-    const y = keyboard_y - TIP_TEXT_SIZE - 10;
-    const tip_title = "颜色对照表";
-    rl.drawTextEx(font, tip_title, .{ .x = x, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
-    var text_rect = rl.measureTextEx(font, tip_title, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
-    x += text_rect.x + 16;
+    // 颜色对照表
+    var tx = kx;
+    const ty = ky - TIP_TEXT_SIZE - 10;
 
-    const down_color_text = "按住颜色";
-    drawHintText(down_color_text, KEY_PRESSED_COLOR, x, y);
-    text_rect = rl.measureTextEx(font, down_color_text, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
-    x += text_rect.x + 40;
+    rl.drawTextEx(font, "颜色对照表", .{ .x = tx, .y = ty }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
+    tx += rl.measureTextEx(font, "颜色对照表", TIP_TEXT_SIZE, KEY_TEXT_SPACING).x + 16;
 
-    for (KEY_COUNTER_COLORS, 0..) |color, index| {
-        var buf: [128]u8 = undefined;
-        var text: [:0]const u8 = undefined;
-        if (index == 0) {
-            text = "默认颜色";
-        } else if (index >= KEY_COUNTER_COLORS.len - 1) {
-            text = try std.fmt.bufPrintZ(&buf, "大于{}次", .{index - 1});
-        } else {
-            text = try std.fmt.bufPrintZ(&buf, "按{}次", .{index});
-        }
-        drawHintText(text, color, x, y);
-        text_rect = rl.measureTextEx(font, text, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
-        x += text_rect.x + 40;
+    drawHint("按住颜色", KEY_PRESSED_COLOR, tx, ty);
+    tx += rl.measureTextEx(font, "按住颜色", TIP_TEXT_SIZE, KEY_TEXT_SPACING).x + 40;
+
+    for (KEY_COUNTER_COLORS, 0..) |color, i| {
+        const label = switch (i) {
+            0 => "默认颜色",
+            KEY_COUNTER_COLORS.len - 1 => blk: {
+                var buf: [16]u8 = undefined;
+                break :blk std.fmt.bufPrintZ(&buf, "大于{}次", .{i - 1}) catch "";
+            },
+            else => blk: {
+                var buf: [16]u8 = undefined;
+                break :blk std.fmt.bufPrintZ(&buf, "按{}次", .{i}) catch "";
+            },
+        };
+        drawHint(label, color, tx, ty);
+        tx += rl.measureTextEx(font, label, TIP_TEXT_SIZE, KEY_TEXT_SPACING).x + 40;
     }
 
-    // 绘制按键
+    // 绘制所有按键
     for (&KEYBOARD_LAYOUT) |*key| {
-        drawKey(key, keyboard_x, keyboard_y);
+        drawKey(key, kx, ky);
     }
 }
 
-// 绘制提示文本
-fn drawHintText(text: [:0]const u8, color: rl.Color, x: f32, y: f32) void {
+fn drawHint(label: [:0]const u8, color: rl.Color, x: f32, y: f32) void {
     rl.drawRectangleRounded(.{ .x = x, .y = y, .width = 24, .height = 24 }, 0.1, 4, color);
-    rl.drawTextEx(font, text, .{ .x = x + 30, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
+    rl.drawTextEx(font, label, .{ .x = x + 30, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
 }
 
-// 绘制按键
-fn drawKey(key: *Key, keyboard_x: f32, keyboard_y: f32) void {
-    // 按键检测
-    if (rl.isKeyPressed(key.key_code)) {
-        key.is_pressed = true;
-    }
-    if (rl.isKeyReleased(key.key_code)) {
-        key.is_pressed = false;
-        key.counter += 1;
-        if (key.counter >= KEY_COUNTER_COLORS.len - 1) {
-            key.counter = KEY_COUNTER_COLORS.len - 1;
+fn drawKey(key: *Key, kx: f32, ky: f32) void {
+    // 状态更新
+    if (key.key_code != .null) {
+        if (rl.isKeyPressed(key.key_code)) key.is_pressed = true;
+        if (rl.isKeyReleased(key.key_code)) {
+            key.is_pressed = false;
+            key.counter = @min(key.counter + 1, MAX_COUNTER);
         }
     }
 
-    // 计算屏幕空间中的按键位置和大小
-    const screen_key_x = keyboard_x + key.x;
-    const screen_key_y = keyboard_y + key.y;
-    const screen_key_width = key.width;
-    const screen_key_height = key.height;
-
-    // 按键颜色
+    const sx = kx + key.x;
+    const sy = ky + key.y;
     const key_color = if (key.is_pressed) KEY_PRESSED_COLOR else KEY_COUNTER_COLORS[key.counter];
 
-    // 绘制按键背景
-    rl.drawRectangleRounded(.{
-        .x = screen_key_x,
-        .y = screen_key_y,
-        .width = screen_key_width,
-        .height = screen_key_height,
-    }, 0.2, 4, key_color);
+    rl.drawRectangleRounded(.{ .x = sx, .y = sy, .width = key.width, .height = key.height }, 0.2, 4, key_color);
 
-    // 计算适合当前缩放的文字大小
-    const text_size = @max(10.0, KEY_TEXT_SIZE);
+    const text_rect = rl.measureTextEx(font, key.text, KEY_TEXT_SIZE, KEY_TEXT_SPACING);
+    const text_x = sx + (key.width - text_rect.x) / 2;
+    const multiline = std.mem.containsAtLeast(u8, key.text, 1, "\n");
+    const text_y = sy + (key.height - (if (multiline) KEY_TEXT_SIZE * 1.8 else KEY_TEXT_SIZE)) / 2;
 
-    // 测量文本
-    const text_rect = rl.measureTextEx(font, key.text, text_size, KEY_TEXT_SPACING);
-
-    // 计算文本位置
-    const text_pos_x = screen_key_x + (screen_key_width - text_rect.x) / 2;
-    const is_multiline = std.mem.containsAtLeast(u8, key.text, 1, "\n");
-    const text_pos_y = if (is_multiline)
-        screen_key_y + (screen_key_height - text_size * 1.8) / 2
-    else
-        screen_key_y + (screen_key_height - text_size) / 2;
-
-    // 文本位置对齐到像素边界
-    const aligned_text_pos_x = @floor(text_pos_x);
-    const aligned_text_pos_y = @floor(text_pos_y);
-
-    // 绘制文本 - 默认炭灰按键用深色文字，彩色按键用白色文字
-    const text_color: rl.Color = if (key.counter == 0 and !key.is_pressed)
-        .{ .r = 0xD1, .g = 0xD5, .b = 0xDB, .a = 0xFF } // 浅灰文字配炭灰背景
-    else
-        rl.Color.white;
-    rl.drawTextEx(font, key.text, .{ .x = aligned_text_pos_x, .y = aligned_text_pos_y }, text_size, KEY_TEXT_SPACING, text_color);
-}
-
-fn reset_keys() void {
-    for (&KEYBOARD_LAYOUT) |*key| {
-        key.reset();
-    }
+    const text_color: rl.Color = if (key.counter == 0 and !key.is_pressed) KEY_TEXT_LIGHT else .white;
+    rl.drawTextEx(font, key.text, .{ .x = @floor(text_x), .y = @floor(text_y) }, KEY_TEXT_SIZE, KEY_TEXT_SPACING, text_color);
 }
