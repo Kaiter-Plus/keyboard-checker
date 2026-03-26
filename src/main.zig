@@ -21,16 +21,21 @@ const KEY_TEXT_SIZE = 18;
 // 字母间距
 const KEY_TEXT_SPACING = 1.5;
 
-// 按键按下颜色
-const KEY_PRESSED_COLOR = rl.Color{ .r = 0x00, .g = 0x7d, .b = 0xff, .a = 0xff };
+// 配色常量
+const BG_COLOR = rl.Color{ .r = 0x1E, .g = 0x20, .b = 0x26, .a = 0xFF }; // 窗口背景：深灰
+const KEYBOARD_BG_COLOR = rl.Color{ .r = 0x2A, .g = 0x2D, .b = 0x35, .a = 0xFF }; // 键盘容器背景
+const RESET_BTN_COLOR = rl.Color{ .r = 0x60, .g = 0xA5, .b = 0xFA, .a = 0xFF }; // 重置按钮：亮蓝（同按下色）
 
-// 按键按下次数颜色
+// 按键按下颜色（亮蓝）
+const KEY_PRESSED_COLOR = rl.Color{ .r = 0x60, .g = 0xA5, .b = 0xFA, .a = 0xFF };
+
+// 按键颜色（深色主题）
 const KEY_COUNTER_COLORS = [_]rl.Color{
-    .black,
-    .{ .r = 0x00, .g = 0xbf, .b = 0xc9, .a = 0xff },
-    .{ .r = 0xff, .g = 0x98, .b = 0x00, .a = 0xff },
-    .{ .r = 0x8a, .g = 0x2b, .b = 0xe2, .a = 0xff },
-    .{ .r = 0xe4, .g = 0x00, .b = 0x78, .a = 0xff },
+    .{ .r = 0x3C, .g = 0x40, .b = 0x48, .a = 0xFF }, // 默认：炭灰
+    .{ .r = 0x81, .g = 0x8C, .b = 0xF8, .a = 0xFF }, // 1次：紫罗兰
+    .{ .r = 0xF4, .g = 0x72, .b = 0xB6, .a = 0xFF }, // 2次：粉红
+    .{ .r = 0xFB, .g = 0x92, .b = 0x3C, .a = 0xFF }, // 3次：橙色
+    .{ .r = 0xEF, .g = 0x44, .b = 0x44, .a = 0xFF }, // 4次+：红色
 };
 
 // 按键结构体
@@ -196,7 +201,7 @@ pub fn main() anyerror!void {
     // 配置
     rl.setConfigFlags(.{
         .window_resizable = true,
-        .msaa_4x_hint = true,
+        .window_highdpi = true,
     });
 
     // 设置输出日志级别
@@ -212,12 +217,12 @@ pub fn main() anyerror!void {
     // 设置目标帧率
     rl.setTargetFPS(60);
 
-    // 自定义字体
-    font = try rl.loadFontEx("./assets/fonts/HarmonyOS_SansSC_Regular.ttf", 256, FONT_CHARS);
+    // 自定义字体 - 大基尺寸减少缩放损失
+    font = try rl.loadFontEx("./assets/fonts/HarmonyOS_SansSC_Regular.ttf", 2048, FONT_CHARS);
     defer rl.unloadFont(font);
 
-    // 设置字体纹理过滤模式为点采样
-    rl.setTextureFilter(font.texture, .point);
+    // 字体纹理过滤：双线性
+    rl.setTextureFilter(font.texture, .bilinear);
 
     // 创建相机
     var camera: rl.Camera2D = .{
@@ -277,10 +282,10 @@ pub fn main() anyerror!void {
         defer rl.endMode2D();
 
         // 背景颜色
-        rl.clearBackground(.white);
+        rl.clearBackground(BG_COLOR);
 
         // 绘制重置按钮
-        rl.drawRectangleRounded(reset_button, 0.1, 50, .blue);
+        rl.drawRectangleRounded(reset_button, 0.1, 50, RESET_BTN_COLOR);
         rl.drawTextEx(font, "重置", .{ .x = reset_button_text_x, .y = reset_button_text_y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
 
         // 直接在屏幕空间绘制键盘
@@ -295,7 +300,7 @@ fn drawKeyboard() !void {
     const keyboard_y = @as(f32, @floatFromInt(VIRTUAL_HEIGHT - KEYBOARD_HEIGHT)) / 2.0;
 
     // 绘制键盘主容器
-    const keyboard_color: rl.Color = .{ .r = 0xf1, .g = 0xf3, .b = 0xf5, .a = 0xff };
+    const keyboard_color = KEYBOARD_BG_COLOR;
     const keyboard_width = @as(f32, @floatFromInt(KEYBOARD_WIDTH));
     const keyboard_height = @as(f32, @floatFromInt(KEYBOARD_HEIGHT));
     rl.drawRectangleRounded(.{ .x = keyboard_x, .y = keyboard_y, .width = keyboard_width, .height = keyboard_height }, 0.1, 4, keyboard_color);
@@ -304,7 +309,7 @@ fn drawKeyboard() !void {
     var x = keyboard_x;
     const y = keyboard_y - TIP_TEXT_SIZE - 10;
     const tip_title = "颜色对照表";
-    rl.drawTextEx(font, tip_title, .{ .x = x, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .black);
+    rl.drawTextEx(font, tip_title, .{ .x = x, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
     var text_rect = rl.measureTextEx(font, tip_title, TIP_TEXT_SIZE, KEY_TEXT_SPACING);
     x += text_rect.x + 16;
 
@@ -337,7 +342,7 @@ fn drawKeyboard() !void {
 // 绘制提示文本
 fn drawHintText(text: [:0]const u8, color: rl.Color, x: f32, y: f32) void {
     rl.drawRectangleRounded(.{ .x = x, .y = y, .width = 24, .height = 24 }, 0.1, 4, color);
-    rl.drawTextEx(font, text, .{ .x = x + 30, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .black);
+    rl.drawTextEx(font, text, .{ .x = x + 30, .y = y }, TIP_TEXT_SIZE, KEY_TEXT_SPACING, .white);
 }
 
 // 绘制按键
@@ -389,8 +394,12 @@ fn drawKey(key: *Key, keyboard_x: f32, keyboard_y: f32) void {
     const aligned_text_pos_x = @floor(text_pos_x);
     const aligned_text_pos_y = @floor(text_pos_y);
 
-    // 绘制文本
-    rl.drawTextEx(font, key.text, .{ .x = aligned_text_pos_x, .y = aligned_text_pos_y }, text_size, KEY_TEXT_SPACING, .white);
+    // 绘制文本 - 默认炭灰按键用深色文字，彩色按键用白色文字
+    const text_color: rl.Color = if (key.counter == 0 and !key.is_pressed)
+        .{ .r = 0xD1, .g = 0xD5, .b = 0xDB, .a = 0xFF } // 浅灰文字配炭灰背景
+    else
+        rl.Color.white;
+    rl.drawTextEx(font, key.text, .{ .x = aligned_text_pos_x, .y = aligned_text_pos_y }, text_size, KEY_TEXT_SPACING, text_color);
 }
 
 fn reset_keys() void {
